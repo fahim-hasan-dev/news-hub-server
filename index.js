@@ -3,7 +3,7 @@ const cors = require("cors")
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cookieParser = require('cookie-parser')
 require('dotenv').config()
-// var jwt = require('jsonwebtoken');
+var jwt = require('jsonwebtoken');
 const app = express()
 const port = process.env.PORT || 5000;
 
@@ -53,29 +53,29 @@ async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
 
-        // // jwt authorization apis
-        // app.post('/api/v1/access', async (req, res) => {
-        //     const user = req.body;
-        //     const token = jwt.sign(user, process.env.PRIVATE_KEY, { expiresIn: "1h" })
-        //     console.log(token)
-        //     res
-        //         .cookie("token", token, {
-        //             httpOnly: true,
-        //             secure: process.env.NODE_ENV === 'production',
-        //             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-        //             // secure: true,
-        //             // sameSite: "none",
-        //         })
-        //         .send({ success: true })
-        // })
+        // jwt authorization apis
+        app.post('/api/v1/access', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.PRIVATE_KEY, { expiresIn: "1h" })
+            console.log(token)
+            res
+                .cookie("token", token, {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+                    secure: true,
+                    sameSite: "none",
+                })
+                .send({ success: true })
+        })
 
-        // app.post('/api/v1/logout', async (req, res) => {
-        //     const user = req.body;
-        //     console.log(user)
-        //     res
-        //         .clearCookie('token', { maxAge: 0, sameSite: 'none', secure: true })
-        //         .send({ success: true })
-        // })
+        app.post('/api/v1/logout', async (req, res) => {
+            const user = req.body;
+            console.log(user)
+            res
+                .clearCookie('token', { maxAge: 0, sameSite: 'none', secure: true })
+                .send({ success: true })
+        })
 
         // users apis
         const userCollection = client.db(process.env.DB_NAME).collection("users")
@@ -89,7 +89,7 @@ async function run() {
             const result = await userCollection.insertOne(user)
             res.send(result)
         })
-        app.get('/users', async (req, res) => {
+        app.get('/users',verify, async (req, res) => {
             const query ={}
             if(req.query.rol){
                 query.rol=req.query.rol
@@ -97,7 +97,7 @@ async function run() {
             const result = await userCollection.find(query).toArray()
             res.send(result)
         })
-        app.get(`/users/:email`, async (req, res) => {
+        app.get(`/users/:email`,verify, async (req, res) => {
             const query = {email:req.params.email }
             const result = await userCollection.findOne(query)
             res.send(result)
@@ -167,7 +167,7 @@ async function run() {
             const result = await articlesCollection.find(query).sort(sort).limit(limit).toArray()
             res.send(result)
         })
-        app.get(`/articles/:id`, async (req, res) => {
+        app.get(`/articles/:id`,verify, async (req, res) => {
             const id =req.params.id
             const query = {_id: new ObjectId(id) }
             const result = await articlesCollection.findOne(query)
